@@ -1,0 +1,161 @@
+RADIX	DEC
+    PROCESSOR	18F45K50
+    #INCLUDE	<P18F45K50.INC>
+    
+    
+    ORG	    0x00
+    
+    
+    GOTO    MAIN
+    ORG	    0x08
+    ORG	    0x18
+    
+MAIN:    
+    MOVLB	    15
+    
+    
+    CLRF    0X32
+    CLRF    0X33
+    CLRF    0X34
+    
+    
+ ;DEFINE B AS OUTPUL VOLTAGE TO KEYPAD & KEYPAD INPUT
+    CLRF    LATB ;SET PORTB AS 0 VALUE
+    CLRF    ANSELB ;SET PINS AS DIGITAL
+    
+    MOVLW    b'00000000'; SET WREG 
+    MOVWF    TRISB ;
+
+;DEFINE D AS INPUT
+    CLRF    LATD; SET PORTA DS 0
+    CLRF    ANSELD ;SET PINS DS DIGITAL
+
+    MOVLW    b'00000000'; SET BITS AS 0
+    MOVWF    TRISD; OUTPUT PORT TO LEDs
+    
+
+
+    MOVLW   d'0'		;DISPLAY ON
+    MOVWF   LATD,A
+    BSF	    LATD,7,A
+    MOVLW   d'15'
+    MOVWF   LATB,A
+    NOP
+    BCF	    LATD,7,A
+    CALL    RETARDO2
+    
+    MOVLW   d'0'	    ;CLEAR DISPLAY
+    MOVWF   LATD,A
+    BSF	    LATD,7,A
+    MOVLW   d'1'
+    MOVWF   LATB,A
+    NOP
+    BCF	    LATD,7,A
+    CALL    RETARDO2
+    
+    MOVLW   d'0'	    ;CURSOR HOME
+    MOVWF   LATD,A
+    BSF	    LATD,7,A    
+    MOVLW   d'2'
+    MOVWF   LATB,A
+    NOP
+    BCF	    LATD,7,A
+    CALL    RETARDO2
+
+    MOVLW   d'0'	    ;ENTRY MODE SET
+    MOVWF   LATD,A
+    BSF	    LATD,7,A      
+    MOVLW   d'7'
+    MOVWF   LATB,A
+    NOP
+    BCF	    LATD,7,A    
+    CALL    RETARDO2
+    
+;    MOVLW   d'0'	    ;CURSOR SHIFT
+;    MOVWF   LATD,A
+;    BSF	    LATD,7,A      
+;    MOVLW   b'00010100'
+;    MOVWF   LATB,A
+;    NOP
+;    BCF	    LATD,7,A
+;    CALL    RETARDO2
+    
+    MOVLW   d'0'		;FUNCTION SET
+    MOVWF   LATD,A
+    BSF	    LATD,7,A       
+    MOVLW   b'00111000'
+    MOVWF   LATB,A
+    NOP
+    BCF	    LATB,7,A
+    CALL    RETARDO2    
+    
+    
+CURSORSHIFT:
+    GOTO    CURSORSHIFT
+
+
+    
+
+
+
+
+
+RETARDO:
+    INCF    0X32,F,A
+    BTFSS   STATUS,2
+	GOTO	RETARDO
+	RETURN
+RETARDO2:
+    CALL    RETARDO
+    INCF    0X33,F,A
+    BTFSS   STATUS,2
+	GOTO	RETARDO2
+    INCF    0X34,F,A
+    BTFSS   0X34,2,A
+    GOTO    RETARDO2
+    RETURN
+    
+
+    
+    
+    
+    
+ 
+ 
+  ;CONFIG1L
+  CONFIG  PLLSEL = PLL4X        ; PLL Selection (4x clock multiplier)
+  CONFIG  CFGPLLEN = OFF        ; PLL Enable Configuration bit (PLL Disabled (firmware controlled))
+  CONFIG  CPUDIV = NOCLKDIV     ; CPU System Clock Postscaler (CPU uses system clock (no divide))
+  CONFIG  LS48MHZ = SYS24X4     ; Low Speed USB mode with 48 MHz system clock (System clock at 24 MHz, USB clock divider is set to 4)
+
+; CONFIG1H
+  CONFIG  FOSC = INTOSCIO       ; Oscillator Selection (Internal oscillator)
+  CONFIG  PCLKEN = ON           ; Primary Oscillator Shutdown (Primary oscillator enabled)
+  CONFIG  FCMEN = OFF           ; Fail-Safe Clock Monitor (Fail-Safe Clock Monitor disabled)
+  CONFIG  IESO = OFF            ; Internal/External Oscillator Switchover (Oscillator Switchover mode disabled)
+
+; CONFIG2L
+  CONFIG  nPWRTEN = OFF         ; Power-up Timer Enable (Power up timer disabled)
+  CONFIG  BOREN = SBORDIS       ; Brown-out Reset Enable (BOR enabled in hardware (SBOREN is ignored))
+  CONFIG  BORV = 190            ; Brown-out Reset Voltage (BOR set to 1.9V nominal)
+  CONFIG  nLPBOR = OFF          ; Low-Power Brown-out Reset (Low-Power Brown-out Reset disabled)
+
+; CONFIG2H
+  CONFIG  WDTEN = OFF           ; Watchdog Timer Enable bits (WDT disabled in hardware (SWDTEN ignored))
+  CONFIG  WDTPS = 32768         ; Watchdog Timer Postscaler (1:32768)
+
+; CONFIG3H
+  CONFIG  CCP2MX = RC1          ; CCP2 MUX bit (CCP2 input/output is multiplexed with RC1)
+  CONFIG  PBADEN = ON           ; PORTB A/D Enable bit (PORTB<5:0> pins are configured as analog input channels on Reset)
+  CONFIG  T3CMX = RC0           ; Timer3 Clock Input MUX bit (T3CKI function is on RC0)
+  CONFIG  SDOMX = RB3           ; SDO Output MUX bit (SDO function is on RB3)
+  CONFIG  MCLRE = ON            ; Master Clear Reset Pin Enable (MCLR pin enabled; RE3 input disabled)
+
+; CONFIG4L
+  CONFIG  STVREN = ON           ; Stack Full/Underflow Reset (Stack full/underflow will cause Reset)
+  CONFIG  LVP = ON              ; Single-Supply ICSP Enable bit (Single-Supply ICSP enabled if MCLRE is also 1)
+  CONFIG  ICPRT = OFF           ; Dedicated In-Circuit Debug/Programming Port Enable (ICPORT disabled)
+  CONFIG  XINST = OFF
+  
+  
+  END
