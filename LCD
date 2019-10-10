@@ -1,23 +1,19 @@
-RADIX	DEC
+    RADIX	DEC
     PROCESSOR	18F45K50
     #INCLUDE	<P18F45K50.INC>
     
     
     ORG	    0x00
-    
-    
     GOTO    MAIN
     ORG	    0x08
     ORG	    0x18
     
 MAIN:    
-    MOVLB	    15
-    
+    MOVLB   15
     
     CLRF    0X32
     CLRF    0X33
     CLRF    0X34
-    
     
  ;DEFINE B AS OUTPUL VOLTAGE TO KEYPAD & KEYPAD INPUT
     CLRF    LATB ;SET PORTB AS 0 VALUE
@@ -33,16 +29,18 @@ MAIN:
     MOVLW    b'00000000'; SET BITS AS 0
     MOVWF    TRISD; OUTPUT PORT TO LEDs
     
-
-
+    ;CALL    RETARDO2
+    
     MOVLW   d'0'		;DISPLAY ON
     MOVWF   LATD,A
     BSF	    LATD,7,A
     MOVLW   d'15'
     MOVWF   LATB,A
     NOP
-    BCF	    LATD,7,A
     CALL    RETARDO2
+    BCF	    LATD,7,A
+    
+    CALL    ESPERA
     
     MOVLW   d'0'	    ;CLEAR DISPLAY
     MOVWF   LATD,A
@@ -50,8 +48,10 @@ MAIN:
     MOVLW   d'1'
     MOVWF   LATB,A
     NOP
-    BCF	    LATD,7,A
     CALL    RETARDO2
+    BCF	    LATD,7,A
+    
+    CALL    ESPERA
     
     MOVLW   d'0'	    ;CURSOR HOME
     MOVWF   LATD,A
@@ -59,8 +59,10 @@ MAIN:
     MOVLW   d'2'
     MOVWF   LATB,A
     NOP
-    BCF	    LATD,7,A
     CALL    RETARDO2
+    BCF	    LATD,7,A
+    
+    CALL    ESPERA
 
     MOVLW   d'0'	    ;ENTRY MODE SET
     MOVWF   LATD,A
@@ -68,8 +70,10 @@ MAIN:
     MOVLW   d'7'
     MOVWF   LATB,A
     NOP
-    BCF	    LATD,7,A    
     CALL    RETARDO2
+    BCF	    LATD,7,A
+    
+    CALL    ESPERA
     
 ;    MOVLW   d'0'	    ;CURSOR SHIFT
 ;    MOVWF   LATD,A
@@ -77,8 +81,10 @@ MAIN:
 ;    MOVLW   b'00010100'
 ;    MOVWF   LATB,A
 ;    NOP
+;    CALL    RETARDO2    
 ;    BCF	    LATD,7,A
-;    CALL    RETARDO2
+;    
+;    CALL    ESPERA
     
     MOVLW   d'0'		;FUNCTION SET
     MOVWF   LATD,A
@@ -86,20 +92,30 @@ MAIN:
     MOVLW   b'00111000'
     MOVWF   LATB,A
     NOP
-    BCF	    LATB,7,A
-    CALL    RETARDO2    
+    CALL    RETARDO2
+    BCF	    LATD,7,A
+    
+    CALL    ESPERA        
     
     
 CURSORSHIFT:
     GOTO    CURSORSHIFT
 
 
-    
+ESPERA:
+    BCF	PORTD,5,A	    ;definir RS = 0
+    BSF	PORTD,6,A	    ;definir RW = 1
+    MOVLW   255
+    MOVWF   TRISB,A	    ;definir PORTB como INPUT
+E1:
+    BTFSC   PORTB,7,A	    ;leer BF, si es cero, salta el ciclo
+	GOTO    E1
+	MOVLW	0
+	MOVWF	TRISB,A	    ;regresa PORTB a OUTPUT
+	RETURN
 
-
-
-
-
+	
+;--------------------------------
 RETARDO:
     INCF    0X32,F,A
     BTFSS   STATUS,2
@@ -110,17 +126,12 @@ RETARDO2:
     INCF    0X33,F,A
     BTFSS   STATUS,2
 	GOTO	RETARDO2
-    INCF    0X34,F,A
-    BTFSS   0X34,2,A
-    GOTO    RETARDO2
+    ;INCF    0X34,F,A
+    ;BTFSS   0X34,2,A
+    ;GOTO    RETARDO2
     RETURN
     
 
-    
-    
-    
-    
- 
  
   ;CONFIG1L
   CONFIG  PLLSEL = PLL4X        ; PLL Selection (4x clock multiplier)
@@ -159,3 +170,5 @@ RETARDO2:
   
   
   END
+
+
