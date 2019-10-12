@@ -2,6 +2,20 @@
     PROCESSOR	18F45K50
     #INCLUDE	<P18F45K50.INC>
     
+    #define RS	LATC,0,A
+    #define RW	LATC,1,A
+    #define E	LATC,2,A
+    #define DATOS	LATD,A
+    
+    VAR1	EQU 0
+    VAR2	EQU 1
+    NUM1	EQU 2
+    NUM2	EQU 3
+    CONT	EQU 4
+    COMPTER	EQU 5
+    RESUL	EQU 6
+    PRERES	EQU 7
+    KONT	EQU 8
     
     ORG	    0x00
     GOTO    MAIN
@@ -10,7 +24,8 @@
     
 MAIN:    
     MOVLB   15
-    
+
+    ;Variables para rutina RETARDO2
     CLRF    0X32
     CLRF    0X33
     CLRF    0X34
@@ -19,95 +34,468 @@ MAIN:
     CLRF    LATB ;SET PORTB AS 0 VALUE
     CLRF    ANSELB ;SET PINS AS DIGITAL
     
-    MOVLW    b'00000000'; SET WREG 
-    MOVWF    TRISB ;
+    MOVLW    b'00001111'; SET WREG 
+    MOVWF    TRISB ; PIN 0-3 is output voltage. Pin 4-7 is keppad input
 
-;DEFINE D AS INPUT
+;DEFINE D AS OUTPUT
     CLRF    LATD; SET PORTA DS 0
     CLRF    ANSELD ;SET PINS DS DIGITAL
 
     MOVLW    b'00000000'; SET BITS AS 0
     MOVWF    TRISD; OUTPUT PORT TO LEDs
-    
-    ;CALL    RETARDO2
-    
-    MOVLW   d'0'		;DISPLAY ON
-    MOVWF   LATD,A
-    BSF	    LATD,7,A
-    MOVLW   d'15'
-    MOVWF   LATB,A
-    NOP
-    CALL    RETARDO2
-    BCF	    LATD,7,A
-    
-    CALL    ESPERA
-    
-    MOVLW   d'0'	    ;CLEAR DISPLAY
-    MOVWF   LATD,A
-    BSF	    LATD,7,A
-    MOVLW   d'1'
-    MOVWF   LATB,A
-    NOP
-    CALL    RETARDO2
-    BCF	    LATD,7,A
-    
-    CALL    ESPERA
-    
-    MOVLW   d'0'	    ;CURSOR HOME
-    MOVWF   LATD,A
-    BSF	    LATD,7,A    
-    MOVLW   d'2'
-    MOVWF   LATB,A
-    NOP
-    CALL    RETARDO2
-    BCF	    LATD,7,A
-    
-    CALL    ESPERA
 
-    MOVLW   d'0'	    ;ENTRY MODE SET
-    MOVWF   LATD,A
-    BSF	    LATD,7,A      
+;DEFINE C AS OUTPUT
+    CLRF    LATC; SET PORTA DS 0
+    CLRF    ANSELC ;SET PINS DS DIGITAL
+    
+    MOVLW    b'00000000'; SET BITS AS 0
+    MOVWF    TRISC; OUTPUT PORT TO LEDs
+    
+    ;PULL-UP
+    BCF	    INTCON2,7
+    MOVLW   b'00001111'		;pullups en los menos significativos. estos leen la entrada
+    MOVWF   WPUB
+    
+    START:
+    
+    CLRF    NUM1,A
+    CLRF    NUM2,A
+    CLRF    CONT,A
+    CLRF    COMPTER,A
+    CLRF    KONT
+    CLRF    RESUL
+    CLRF    PRERES
+    
+    
+    CALL    RETARDO
+
+    
+    
+    
+    
+
+   ;FUNCTION SET
+MOVLW	b'00111000'
+CALL	rutinaComando
+           
+    ;DISPLAY ON
+MOVLW	d'15'
+CALL	rutinaComando
+    
+    ;ENTRY MODE SET
+MOVLW	d'7'
+CALL	rutinaComando
+    
+    ;CURSOR SHIFT
+MOVLW	b'00010100'
+CALL	rutinaComando
+    
+    ;CLEAR DISPLAY
+MOVLW	d'1'
+CALL	rutinaComando
+
+LecturaBotones:    
+CALL    DELAY
+    SETF    LATB
+    BCF	    LATB,4
+    BTFSS   PORTB,0		    ;PRIMERA FILA
+	GOTO	B1
+    BTFSS   PORTB,1
+	GOTO	B2
+    BTFSS   PORTB,2
+	GOTO	B3
+    BTFSS   PORTB,3
+	GOTO	BA
+	
+    RLNCF   LATB,F		    ;SEGUNDA FILA
+    BTFSS   PORTB,0
+	GOTO	B4
+    BTFSS   PORTB,1
+	GOTO	B5
+    BTFSS   PORTB,2
+	GOTO	B6
+    BTFSS   PORTB,3
+	GOTO	BB
+	
+    RLNCF   LATB,F		    ;TERCERA FILA
+    BTFSS   PORTB,0
+	GOTO	B7
+    BTFSS   PORTB,1
+	GOTO	B8
+    BTFSS   PORTB,2
+	GOTO	B9
+    BTFSS   PORTB,3
+	GOTO	BCC
+	
+    RLNCF   LATB,F		    ;CUARTA FILA
+    BTFSS   PORTB,0
+	GOTO	BX
+    BTFSS   PORTB,1
+	GOTO	B0
+    BTFSS   PORTB,2
+	GOTO	BGATO
+    BTFSS   PORTB,3
+	GOTO	BD
+	GOTO	LecturaBotones
+
+	
+B1:
+    MOVLW   '1'
+    CALL    escribirDato
+    
+    MOVLW   d'1'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+B2:
+    MOVLW   '2'
+    CALL    escribirDato
+    
+    MOVLW   d'2'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+B3:
+    MOVLW   '3'
+    CALL    escribirDato
+    
+    MOVLW   d'3'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones 
+    
+B4:
+    MOVLW   '4'
+    CALL    escribirDato
+    
+    MOVLW   d'4'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+B5:
+    MOVLW   '5'
+    CALL    escribirDato
+    MOVLW   d'5'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+B6:
+    MOVLW   '6'
+    CALL    escribirDato
+    
+    MOVLW   d'6'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+B7:
+    MOVLW   '7'
+    CALL    escribirDato
+    
     MOVLW   d'7'
-    MOVWF   LATB,A
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+B8:
+    MOVLW   '8'
+    CALL    escribirDato
+    
+    MOVLW   d'8'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+B9:
+    MOVLW   '9'
+    CALL    escribirDato
+    
+    MOVLW   d'9'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+B0:
+    MOVLW   '0'
+    CALL    escribirDato
+    
+    MOVLW   d'0'
+    BTFSS   CONT,0,A
+    MOVWF   NUM1,A
+    MOVWF   NUM2,A
+    BTFSC   CONT,7,A
+	GOTO	SUMA
+    BTFSC   CONT,6,A
+	GOTO	RESTAR
+    BTFSC   CONT,5,A
+	GOTO	MULT
+    BTFSC   CONT,4,A
+	GOTO	DIV
+    GOTO    LecturaBotones
+    
+
+    
+BA:				;BOTON DE SUMA
+
+    MOVLW   b'10000001'
+    MOVWF   CONT,A
+    
+    MOVLW   '+'
+    CALL    escribirDato
+    
+    GOTO	LecturaBotones
+
+SUMA:
+    MOVF    NUM1,W,A
+    ADDWF   NUM2,F,A
+    MOVFF   NUM2,RESUL
+	GOTO	DECENAS
+
+DECENAS:
+    MOVLW   b'00001010'		;Restar de 10 en 10
+    MOVFF   RESUL,PRERES
+    SUBWF   RESUL,F,A
+    BTFSS   STATUS,N
+	GOTO	KONTADOR
+	GOTO	VALORFINAL
+	
+KONTADOR:
+    INCF    KONT,F,A		;Contador para decenas
+    GOTO    DECENAS
+
+VALORFINAL:
+    ADDWF   RESUL,F,A
+    MOVFF   RESUL,PRERES
+    SWAPF   KONT,F,A		;Resultado decenas se cambia a bits 4-7
+    MOVFF   PRERES,WREG
+    ADDWF   KONT,F,A		;Sumas los 4 bits menos significativos (unidades)
+    MOVFF   KONT,NUM2
+    GOTO    LecturaBotones
+
+BCC:
+    MOVLW   b'00100001'
+    MOVWF   CONT,A
+    
+    MOVLW   '*'
+    CALL    escribirDato
+    
+	GOTO	LecturaBotones
+
+MULT:
+    MOVF    NUM1,W,A
+    MULWF   NUM2,A
+    MOVFF   PRODL,RESUL
+	GOTO	DECENAS	
+	
+BX:
+    MOVLW	'='
+    CALL	escribirDato
+    
+    
+    MOVFF    NUM2,NUM1	    ;NUM2 -> UNIDADES
+			    ;NUM1 -> DECENAS
+    MOVLW   b'00001111'
+    ANDWF   NUM2,F,A
+    BSF	    NUM2,4,A
+    BSF	    NUM2,5,A
+    
+    MOVLW	NUM2
+    CALL	escribirDato
+    
+    SWAPF   NUM1,F,A
+    MOVLW   b'00001111'
+    ANDWF   NUM1,F,A
+    BSF	    NUM2,4,A
+    BSF	    NUM2,5,A
+    
+    MOVLW	NUM1
+    CALL	escribirDato
+    
+    CLRF    NUM1,A
+    CLRF    NUM2,A
+    CLRF    CONT,A
+    CLRF    KONT
+    CLRF    RESUL
+    CLRF    PRERES
+	GOTO	FINAL
+    
+BB:
+    MOVLW   b'01000001'
+    MOVWF   CONT,A
+    
+    MOVLW   '-'
+    CALL    escribirDato
+    
+	GOTO	LecturaBotones
+	
+RESTAR:
+    MOVF    NUM2,W,A
+    SUBWF   NUM1,F,A
+    MOVFF   NUM1,NUM2
+    BTFSC   STATUS,N
+	GOTO NEGATIVOS
+	GOTO	LecturaBotones
+	
+NEGATIVOS:
+    NEGF    NUM2,A
+    BSF	    NUM2,7,A
+	GOTO LecturaBotones	
+	
+BD:
+    MOVLW   b'00010001'
+    MOVWF   CONT,A
+
+
+    MOVLW   '/'
+    CALL    escribirDato
+    
+    GOTO	LecturaBotones
+DIV:
+    CALL    BUCLE
+    MOVFF   COMPTER,NUM2
+    GOTO    LecturaBotones
+    
+   
+ 
+BUCLE:
+    INCF    COMPTER,F,A
+    MOVF    NUM2,W,A
+    SUBWF   NUM1,F,A
+    BTFSC   STATUS,Z,A
+	RETURN
+    BTFSC   STATUS,N,A
+	RETURN
+	GOTO	BUCLE
+    
+    
+    
+BGATO:
+    MOVLW   '#'
+    CALL    escribirDato
+    
+    GOTO    START
+
+ 
+    GOTO FINAL
+    
+    
+
+    
+    
+rutinaComando:
+    BCF	RS
+    BCF	RW
+    call    protocolo
+    RETURN
+
+escribirDato:
+    BSF	RS
+    BCF	RW
+    call    protocolo
+    RETURN
+
+protocolo:
+    BSF	E
+    MOVWF   DATOS
     NOP
-    CALL    RETARDO2
-    BCF	    LATD,7,A
-    
-    CALL    ESPERA
-    
-;    MOVLW   d'0'	    ;CURSOR SHIFT
-;    MOVWF   LATD,A
-;    BSF	    LATD,7,A      
-;    MOVLW   b'00010100'
-;    MOVWF   LATB,A
-;    NOP
-;    CALL    RETARDO2    
-;    BCF	    LATD,7,A
-;    
-;    CALL    ESPERA
-    
-    MOVLW   d'0'		;FUNCTION SET
-    MOVWF   LATD,A
-    BSF	    LATD,7,A       
-    MOVLW   b'00111000'
-    MOVWF   LATB,A
-    NOP
-    CALL    RETARDO2
-    BCF	    LATD,7,A
-    
-    CALL    ESPERA        
-    
-    
-CURSORSHIFT:
-    GOTO    CURSORSHIFT
+    CALL    RETARDO
+    BCF	E
+    return
+        
 
 
 ESPERA:
     BCF	PORTD,5,A	    ;definir RS = 0
     BSF	PORTD,6,A	    ;definir RW = 1
     MOVLW   255
-    MOVWF   TRISB,A	    ;definir PORTB como INPUT
+    MOVWF   TRISB,A	    ;definir PORTB como INPUT    
 E1:
+    ;encender enable, cada que necesitemos revisar el estado del BF, hay que volver a encender el enable
     BTFSC   PORTB,7,A	    ;leer BF, si es cero, salta el ciclo
 	GOTO    E1
 	MOVLW	0
@@ -116,6 +504,8 @@ E1:
 
 	
 ;--------------------------------
+;Rutina RETARDO .25s
+;Rutina RETARDO2 1s
 RETARDO:
     INCF    0X32,F,A
     BTFSS   STATUS,2
@@ -131,7 +521,23 @@ RETARDO2:
     ;GOTO    RETARDO2
     RETURN
     
-
+;--------------------------------
+   ;Rutina DELAY 1s
+DELAY:				;SUBRUTINA DELAY
+    MOVLW   0XFF
+    MOVWF   VAR1
+    ;MOVWF   VAR2
+ 
+LOOP1:				;Loop del delay
+    DECFSZ  VAR1,F
+    GOTO    LOOP1
+    ;DECFSZ  VAR2,F
+    ;GOTO    LOOP1
+    RETURN
+    
+    
+    
+    
  
   ;CONFIG1L
   CONFIG  PLLSEL = PLL4X        ; PLL Selection (4x clock multiplier)
@@ -167,6 +573,8 @@ RETARDO2:
   CONFIG  LVP = ON              ; Single-Supply ICSP Enable bit (Single-Supply ICSP enabled if MCLRE is also 1)
   CONFIG  ICPRT = OFF           ; Dedicated In-Circuit Debug/Programming Port Enable (ICPORT disabled)
   CONFIG  XINST = OFF
+  
+  FINAL:
   
   
   END
